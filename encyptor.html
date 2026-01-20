@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Шифратор/Дешифратор символов</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        textarea, input {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: vertical;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            flex: 1;
+            min-width: 150px;
+        }
+        .encrypt-btn {
+            background: #4CAF50;
+            color: white;
+        }
+        .encrypt-btn:hover {
+            background: #45a049;
+        }
+        .decrypt-btn {
+            background: #2196F3;
+            color: white;
+        }
+        .decrypt-btn:hover {
+            background: #0b7dda;
+        }
+        .clear-btn {
+            background: #f44336;
+            color: white;
+        }
+        .clear-btn:hover {
+            background: #d32f2f;
+        }
+        .output-container {
+            position: relative;
+        }
+        .copy-btn {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            background: #9C27B0;
+            color: white;
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+        .copy-btn:hover {
+            background: #7B1FA2;
+        }
+        .char-map {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .char-map h3 {
+            margin-top: 0;
+        }
+        .char-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 5px;
+            margin-top: 10px;
+        }
+        .char-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 2px 5px;
+            background: white;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🔐 Шифратор/Дешифратор символов</h2>
+        
+        <label>Исходный текст:</label>
+        <textarea id="inputText" rows="6" placeholder="Введите текст для шифрования или зашифрованный текст для дешифрования..."></textarea>
+        
+        <div class="button-group">
+            <button class="encrypt-btn" onclick="encryptText()">🔒 Зашифровать</button>
+            <button class="decrypt-btn" onclick="decryptText()">🔓 Дешифровать</button>
+            <button class="clear-btn" onclick="clearAll()">🗑️ Очистить всё</button>
+        </div>
+        
+        <div class="output-container">
+            <label>Результат:</label>
+            <textarea id="outputText" rows="6" readonly placeholder="Здесь появится результат"></textarea>
+            <button class="copy-btn" onclick="copyToClipboard()">📋 Копировать</button>
+        </div>
+
+        <div class="char-map">
+            <h3>Таблица замены символов:</h3>
+            <div class="char-list" id="charList"></div>
+        </div>
+    </div>
+
+    <script>
+        // Словарь замены символов (двусторонний)
+        const encryptionMap = {
+            //eng small
+            'a': '♡', 'b': '︾', 'c': 'ƽ', 'd': 'ɤ', 'e': 'ƻ',
+            'f': '︽', 'g': '︸', 'h': 'δ', 'i': '♦', 'j': '︷',
+            'k': 'ℵ', 'l': 'ム', 'm': 'ǁ', 'n': '︶', 'o': 'ȣ',
+            'p': 'ʞ', 'q': '⥡', 'r': '⥐', 's': '︵', 't': 'ニ',
+            'u': 'キ', 'v': '︹', 'w': 'Δ', 'x': '﹀', 'y': 'ィ',
+            'z': 'て',
+            //eng caps
+            'A': '¿', 'B': '¬', 'C': '¯', 'D': '¸', 'E': ' ',
+            'F': '¡', 'G': '°', 'H': '«', 'I': 'ˆ', 'J': '¦',
+            'K': '‰', 'L': '—', 'M': '„', 'N': '›', 'O': '·',
+            'P': '‘', 'Q': '‹', 'R': '‡', 'S': '“', 'T': '¨',
+            'U': 'ロ', 'V': '๏', 'W': '✦', 'X': '»', 'Y': '”',
+            'Z': '’',
+            //numbers
+            '0': '@', '1': '₪', '2': '¤', '3': '¥', '4': '€',
+            '5': '×', '6': '₩', '7': 'í', '8': 'Þ', '9': 'ƒ',
+            //special characters itself
+            ' ': '␣', '!': 'Ξ', '?': 'Λ', '.': 'Ʒ', ',': 'Ʋ',
+            ':': 'ƴ', ';': 'ρ', '-': '§',
+            //russian caps
+            'А': ';', 'Б': '%', 'В': '(', 'Г': '&', 'Д': ')', 'Е': '*',
+            'Ё': '/', 'Ж': '?', 'З': ',', 'И': '÷', 'Й': '†', 'К': '★',
+            'Л': '_', 'М': '±', 'Н': '!', 'О': '-', 'П': '[', 'Р': '<',
+            'С': '+', 'Т': ']', 'У': '>', 'Ф': '.', 'Х': '`', 'Ц': '{',
+            'Ч': '^', 'Ш': "'", 'Щ': '"', 'Ъ': '•', 'Ы': '|', 'Ь': ':',
+            'Э': '}', 'Ю': '=', 'Я': '~',
+            //russian small
+            'а': 'Ç', 'б': '✱', 'в': '〆', 'г': 'µ', 'д': '✤', 'е': '王',
+            'ё': 'ü', 'ж': '人', 'з': 'れ', 'и': 'ß', 'й': '个', 'к': 'ゞ',
+            'л': 'œ', 'м': '৳', 'н': '父', 'о': '文', 'п': '³', 'р': '卄',
+            'с': 'ツ', 'т': '廴', 'у': '৲', 'ф': '₰', 'х': 'ƍ', 'ц': 'Ø',
+            'ч': 'Ʃ', 'ш': "ώ", 'щ': 'ƨ', 'ъ': 'Ə', 'ы': 'Ω', 'ь': 'ζ',
+            'э': 'Ĳ', 'ю': '₮', 'я': 'Ψ',                                          
+            // Добавьте любые другие символы по вашему выбору
+        };
+
+        // Создаём обратный словарь для дешифрования автоматически
+        const decryptionMap = {};
+        for (const [key, value] of Object.entries(encryptionMap)) {
+            decryptionMap[value] = key;
+        }
+
+        // Отображаем таблицу символов
+        function displayCharMap() {
+            const charList = document.getElementById('charList');
+            charList.innerHTML = '';
+            
+            for (const [original, encrypted] of Object.entries(encryptionMap)) {
+                const charItem = document.createElement('div');
+                charItem.className = 'char-item';
+                charItem.innerHTML = `
+                    <span>${escapeHtml(original)}</span>
+                    <span>→</span>
+                    <span>${encrypted}</span>
+                `;
+                charList.appendChild(charItem);
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function encryptText() {
+            const input = document.getElementById('inputText').value;
+            let result = '';
+            
+            for (let char of input) {
+                // Если символ есть в словаре шифрования, заменяем его
+                // Если нет - оставляем как есть
+                result += encryptionMap[char] || char;
+            }
+            
+            document.getElementById('outputText').value = result;
+        }
+
+        function decryptText() {
+            const input = document.getElementById('inputText').value;
+            let result = '';
+            
+            for (let char of input) {
+                // Ищем символ в словаре дешифрования
+                // Если найден - возвращаем оригинальный символ
+                // Если нет - оставляем как есть (возможно, это не зашифрованный текст)
+                result += decryptionMap[char] || char;
+            }
+            
+            document.getElementById('outputText').value = result;
+        }
+
+        function copyToClipboard() {
+            const outputText = document.getElementById('outputText');
+            
+            if (!outputText.value.trim()) {
+                alert('Нет текста для копирования!');
+                return;
+            }
+            
+            outputText.select();
+            outputText.setSelectionRange(0, 99999);
+            
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showNotification('✅ Текст скопирован в буфер обмена!');
+                }
+            } catch (err) {
+                navigator.clipboard.writeText(outputText.value)
+                    .then(() => showNotification('✅ Текст скопирован!'))
+                    .catch(() => alert('❌ Ошибка копирования'));
+            }
+        }
+
+        function clearAll() {
+            document.getElementById('inputText').value = '';
+            document.getElementById('outputText').value = '';
+            document.getElementById('inputText').focus();
+        }
+
+        function showNotification(message) {
+            // Создаём временное уведомление
+            const notification = document.createElement('div');
+            notification.textContent = message;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #4CAF50;
+                color: white;
+                padding: 15px 25px;
+                border-radius: 5px;
+                z-index: 1000;
+                animation: fadeInOut 2s ease-in-out;
+            `;
+            
+            // Добавляем анимацию
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes fadeInOut {
+                    0% { opacity: 0; transform: translateY(-10px); }
+                    15% { opacity: 1; transform: translateY(0); }
+                    85% { opacity: 1; transform: translateY(0); }
+                    100% { opacity: 0; transform: translateY(-10px); }
+                }
+            `;
+            document.head.appendChild(style);
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                document.body.removeChild(notification);
+                document.head.removeChild(style);
+            }, 2000);
+        }
+
+        // Горячие клавиши
+        document.addEventListener('keydown', function(event) {
+            // Ctrl+Enter = Зашифровать
+            if (event.ctrlKey && event.key === 'Enter') {
+                event.preventDefault();
+                encryptText();
+            }
+            // Ctrl+Shift+Enter = Дешифровать
+            if (event.ctrlKey && event.shiftKey && event.key === 'Enter') {
+                event.preventDefault();
+                decryptText();
+            }
+            // Ctrl+D = Очистить
+            if (event.ctrlKey && event.key === 'd') {
+                event.preventDefault();
+                clearAll();
+            }
+            // Ctrl+C при фокусе на результате = Копировать
+            if (event.ctrlKey && event.key === 'c' && 
+                document.activeElement.id === 'outputText') {
+                event.preventDefault();
+                copyToClipboard();
+            }
+        });
+
+        // Автоматическое определение (опционально)
+        document.getElementById('inputText').addEventListener('input', function() {
+            // Можно добавить автоопределение, но пока оставим ручное управление
+        });
+
+        // Инициализация при загрузке
+        window.onload = function() {
+            displayCharMap();
+            document.getElementById('inputText').focus();
+            
+            // Пример текста для демонстрации
+            document.getElementById('inputText').placeholder = 
+                "Введите текст для шифрования...\nПример: Hello World! 123\n\nИли введите зашифрованный текст для дешифрования...\nПример: 🅔ᴇʟʟᴏ ␣🅦ᴏʀʟᴅ❗ ⓪②③";
+        };
+    </script>
+</body>
+</html>
