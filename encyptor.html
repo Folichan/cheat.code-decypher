@@ -63,6 +63,7 @@
         }
         .output-container {
             position: relative;
+            padding: 5px;
         }
         .copy-btn {
             position: absolute;
@@ -72,6 +73,7 @@
             color: white;
             padding: 8px 16px;
             font-size: 14px;
+            margin: -10px;
         }
         .copy-btn:hover {
             background: #7B1FA2;
@@ -115,10 +117,10 @@
         </div>
         
         <div class="output-container">
-            <label>Результат:</label>
-            <textarea id="outputText" rows="6" readonly placeholder="Здесь появится результат"></textarea>
+            <label>Результат:</label>            
             <button class="copy-btn" onclick="copyToClipboard()">📋 Копировать</button>
         </div>
+        <textarea id="outputText" rows="6" readonly placeholder="Здесь появится результат"></textarea>
 
         <div class="char-map">
             <h3>Таблица замены символов:</h3>
@@ -328,4 +330,5 @@
         };
     </script>
 </body>
+
 </html>
